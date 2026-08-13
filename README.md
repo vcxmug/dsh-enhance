@@ -31,6 +31,11 @@ npm install -g ./vcxmug-dsh-vision-0.1.0.tgz ./vcxmug-dsh-native-web-0.1.0.tgz
 (`npm install -g ./packages/...` would create symlinks whose dependencies do
 not resolve; packing first installs real copies with their dependencies.)
 
+The plugins are written in TypeScript (`src/index.ts`, strict mode); the built
+`lib/` is committed, so packing and installing work with no build step. After
+editing the source, rebuild with `npm install && npm run build` inside the
+package directory.
+
 Then, in the DeepSeek Harness Web UI:
 
 1. **Settings → Agent presets** — create a preset (or duplicate an existing
@@ -61,8 +66,8 @@ Then, in the DeepSeek Harness Web UI:
 ## Repository layout
 
 ```
-packages/dsh-vision/        # vision plugin (vision_describe, vision_list_models)
-packages/dsh-native-web/    # native web plugin (native_search, native_scrape)
+packages/dsh-vision/        # vision plugin (TS in src/, built lib/ committed)
+packages/dsh-native-web/    # native web plugin (TS in src/, built lib/ committed)
 src/dsh-http/               # Go helper binary for the dynamic-plugin form (stdlib only)
 presets/                    # pure mount-point composition fragments
 docs/                       # known limitations, helper binary, self-test prompt
@@ -86,7 +91,12 @@ docs/                       # known limitations, helper binary, self-test prompt
 
 `npm test` runs one runtime verification: a scripted mock LLM (no API key, no
 network) drives a real headless dsh agent loop with both plugins mounted and
-asserts the tool loop completes end to end. Requires Node >= 22 and the `dsh`
-launcher on PATH (or the `DSH` env var); the test skips when dsh is missing.
+asserts the tool loop completes end to end. Requires Node >= 22.18 (native
+TypeScript execution, no build step) and the `dsh` launcher on PATH (or the
+`DSH` env var); the test skips when dsh is missing.
+
+`npm run typecheck` checks the test sources; `npm run build` rebuilds both
+plugins' `lib/` from `src/`. Both need dev dependencies installed first
+(`npm install` at the repo root and inside each package directory).
 
 License: MIT

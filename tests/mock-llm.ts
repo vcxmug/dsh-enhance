@@ -11,14 +11,37 @@
 // Every request is recorded in the `log` array as verification evidence.
 //
 // Module API:      startMockLlm({ port, log }) -> { port, log, close() }
-// Standalone:      node tests/mock-llm.mjs [PORT]
+// Standalone:      node tests/mock-llm.ts [PORT]
 import http from 'node:http'
 import { pathToFileURL } from 'node:url'
 
-function finishChunk(id, { content, toolCall } = {}) {
-  const choice = { index: 0, delta: {} }
-  if (content !== undefined) choice.delta.content = content
-  if (toolCall) choice.delta.tool_calls = [toolCall]
+/** One recorded request — the verification evidence trail. */
+export interface MockRequestLog {
+  n: number
+  model: unknown
+  lastRole: string | null
+  toolCount: number
+  tools: string[]
+  hasToolResult: boolean
+}
+
+export interface MockLlm {
+  port: number
+  log: MockRequestLog[]
+  close: () => Promise<void>
+}
+
+interface ToolCallDelta {
+  index: number
+  id: string
+  type: 'function'
+  function: { name: string; arguments: string }
+}
+
+function finishChunk(id: string, { content, toolCall }: { content?: string; toolCall?: ToolCallDelta } = {}): object {
+  const choice: Record<string, unknown> = { index: 0, delta: {} }
+  if (content !== undefined) choice.delta = { ...(choice.delta as object), content }
+  if (toolCall) choice.delta = { ...(choice.delta as object), tool_calls: [toolCall] }
   choice.finish_reason = toolCall ? 'tool_calls' : 'stop'
   return {
     id,
@@ -33,11 +56,11 @@ function finishChunk(id, { content, toolCall } = {}) {
   }
 }
 
-function sseChunk(payload) {
+function sseChunk(payload: object): string {
   return `data: ${JSON.stringify(payload)}\n\n`
 }
 
-export async function startMockLlm(options = {}) {
+export async function startMockLlm(options: { port?: number; log?: MockRequestLog[] } = {}): Promise<MockLlm> {
   const log = options.log ?? []
   let counter = 0
 
@@ -55,9 +78,9 @@ export async function startMockLlm(options = {}) {
         res.end()
         return
       }
-      let parsed
+      let parsed: { messages?: Array<Record<string, unknown>>; tools?: Array<{ function?: { name?: unknown } }>; model?: unknown }
       try {
-        parsed = JSON.parse(body)
+        parsed = JSON.parse(body) as typeof parsed
       } catch {
         res.writeHead(400)
         res.end()
@@ -66,11 +89,11 @@ export async function startMockLlm(options = {}) {
       counter++
       const messages = parsed.messages ?? []
       const last = messages[messages.length - 1]
-      const toolNames = (parsed.tools ?? []).map((tool) => tool.function?.name).filter(Boolean)
+      const toolNames = (parsed.tools ?? []).map((tool) => tool.function?.name).filter((name): name is string => typeof name === 'string')
       log.push({
         n: counter,
         model: parsed.model,
-        lastRole: last?.role ?? null,
+        lastRole: typeof last?.role === 'string' ? last.role : null,
         toolCount: toolNames.length,
         tools: toolNames,
         hasToolResult: last?.role === 'tool',
@@ -96,7 +119,7 @@ export async function startMockLlm(options = {}) {
         res.end()
         return
       }
-      const name = toolNames.includes('bash') ? 'bash' : toolNames[0]
+      const name = toolNames.includes('bash') ? 'bash' : toolNames[0]!
       const args = name === 'bash'
         ? JSON.stringify({ command: 'ls', description: 'List files in current directory' })
         : '{}'
@@ -113,7 +136,7 @@ export async function startMockLlm(options = {}) {
     })
   })
 
-  await new Promise((resolve, reject) => {
+  await new Promise<void>((resolve, reject) => {
     server.once('error', reject)
     server.listen(options.port ?? 0, '127.0.0.1', () => {
       server.removeListener('error', reject)
@@ -122,11 +145,12 @@ export async function startMockLlm(options = {}) {
   })
   return {
     get port() {
-      return server.address().port
+      const addr = server.address()
+      return typeof addr === 'object' && addr !== null ? addr.port : 0
     },
     log,
     close() {
-      return new Promise((resolve) => server.close(resolve))
+      return new Promise((resolve) => server.close(() => resolve()))
     },
   }
 }

@@ -1,5 +1,5 @@
 // Runtime verification of the two plugins inside a REAL agent loop, with no
-// API key and no network: a scripted mock LLM (tests/mock-llm.mjs) asks the
+// API key and no network: a scripted mock LLM (tests/mock-llm.ts) asks the
 // agent to run the `bash` tool; the headless dsh profile executes it; the
 // harness's own waterfall chain (tools/execute -> tools/result -> completion)
 // must survive the mount, and the agent must finish cleanly (exit 0).
@@ -11,6 +11,8 @@
 // dsh-base + dsh-headless bundles, and a POSIX shell. The test SKIPS when
 // dsh is unavailable; everything else runs inside throwaway temp dirs.
 //
+// Runs directly on Node >= 22.18 (native type stripping) — no build step.
+//
 // NOTE: the mock server lives in THIS process, so the harness child must be
 // spawned asynchronously — a blocking spawnSync would freeze the event loop
 // and the mock could never answer.
@@ -21,7 +23,7 @@ import { cpSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { startMockLlm } from './mock-llm.mjs'
+import { startMockLlm } from './mock-llm.ts'
 
 const REPO_ROOT = join(fileURLToPath(import.meta.url), '..', '..')
 const DSH = process.env.DSH ?? 'dsh'
@@ -30,31 +32,39 @@ const MARKER = 'dsh-loop-ok.txt'
 const TASK = 'run the bash tool once and report what it printed'
 const RUN_TIMEOUT_MS = 45000
 
+interface RunOutcome {
+  timedOut: boolean
+  error: Error | undefined
+  status: number | null
+  stdout: string
+  stderr: string
+}
+
 /** A fresh unique temp directory without mkdtemp's X-suffix template warning. */
-function makeTempDir(prefix) {
+function makeTempDir(prefix: string): string {
   const dir = join(tmpdir(), `${prefix}-${process.pid}-${Date.now()}-${Math.random().toString(16).slice(2)}`)
   mkdirSync(dir, { recursive: true })
   return dir
 }
 
 /** Run the headless harness to completion (or SIGTERM after the timeout). */
-function runHeadless(args, { cwd, env }) {
+function runHeadless(args: string[], { cwd, env }: { cwd: string; env: NodeJS.ProcessEnv }): Promise<RunOutcome> {
   return new Promise((resolve) => {
     const child = spawn(DSH, args, { cwd, env })
     let stdout = ''
     let stderr = ''
     let timedOut = false
     let settled = false
-    const done = (value) => {
+    const done = (value: RunOutcome) => {
       if (!settled) {
         settled = true
         resolve(value)
       }
     }
-    child.stdout.setEncoding('utf8')
-    child.stderr.setEncoding('utf8')
-    child.stdout.on('data', (chunk) => { stdout += chunk })
-    child.stderr.on('data', (chunk) => { stderr += chunk })
+    child.stdout?.setEncoding('utf8')
+    child.stderr?.setEncoding('utf8')
+    child.stdout?.on('data', (chunk: string) => { stdout += chunk })
+    child.stderr?.on('data', (chunk: string) => { stderr += chunk })
     const killer = setTimeout(() => {
       timedOut = true
       child.kill('SIGTERM')

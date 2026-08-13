@@ -28,6 +28,10 @@ npm install -g ./vcxmug-dsh-vision-0.1.0.tgz ./vcxmug-dsh-native-web-0.1.0.tgz
 （`npm install -g ./packages/...` 会创建符号链接导致依赖无法解析；先 pack
 再安装才是带依赖的真实副本。）
 
+插件用 TypeScript 编写（`src/index.ts`，strict 模式）；构建产物 `lib/` 已提交，
+因此打包安装无需构建步骤。修改源码后，在包目录内执行
+`npm install && npm run build` 重新构建。
+
 然后在 DeepSeek Harness Web 界面：
 
 1. **设置 → Agent 预设**——新建一个预设（或复制现有预设），加入你要的行
@@ -57,8 +61,8 @@ npm install -g ./vcxmug-dsh-vision-0.1.0.tgz ./vcxmug-dsh-native-web-0.1.0.tgz
 ## 仓库结构
 
 ```
-packages/dsh-vision/        # 识图插件（vision_describe、vision_list_models）
-packages/dsh-native-web/    # 原生联网插件（native_search、native_scrape）
+packages/dsh-vision/        # 识图插件（TS 源码在 src/，构建产物 lib/ 已入库）
+packages/dsh-native-web/    # 原生联网插件（TS 源码在 src/，构建产物 lib/ 已入库）
 src/dsh-http/               # 动态插件形态使用的 Go 辅助二进制（仅标准库）
 presets/                    # 纯挂载点组合行片段
 docs/                       # 已知限制、辅助二进制、自测提示词
@@ -80,6 +84,10 @@ docs/                       # 已知限制、辅助二进制、自测提示词
 
 `npm test` 运行一项运行时验证：脚本化 mock LLM（无需 API key、无网络）驱动
 真实的 headless dsh agent 循环（两个插件均已挂载），断言工具循环端到端跑通。
-需要 Node >= 22 且 `dsh` 在 PATH 上（或用 `DSH` 环境变量指定）；找不到 dsh 时自动跳过。
+需要 Node >= 22.18（原生运行 TypeScript，无需构建）且 `dsh` 在 PATH 上
+（或用 `DSH` 环境变量指定）；找不到 dsh 时自动跳过。
+
+`npm run typecheck` 检查测试源码类型；`npm run build` 从 `src/` 重建两个插件的
+`lib/`。两者都需要先安装开发依赖（仓库根与各包目录内执行 `npm install`）。
 
 License: MIT

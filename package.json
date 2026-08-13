@@ -1,0 +1,12 @@
+{
+  "name": "dsh-enhance",
+  "private": true,
+  "type": "module",
+  "description": "Native plugins that fill the gaps of the DeepSeek Harness: vision and direct-HTTP web tools, one composition row each.",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

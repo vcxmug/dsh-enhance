@@ -76,4 +76,10 @@ docs/                       # 已知限制、辅助二进制、自测提示词
 - 已知限制：见 [docs/known-limitations.md](docs/known-limitations.md)。
 - 端到端验证：见 [docs/self-test-prompt.md](docs/self-test-prompt.md)。
 
+## 测试
+
+`npm test` 运行一项运行时验证：脚本化 mock LLM（无需 API key、无网络）驱动
+真实的 headless dsh agent 循环（两个插件均已挂载），断言工具循环端到端跑通。
+需要 Node >= 22 且 `dsh` 在 PATH 上（或用 `DSH` 环境变量指定）；找不到 dsh 时自动跳过。
+
 License: MIT

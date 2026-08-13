@@ -82,4 +82,11 @@ docs/                       # known limitations, helper binary, self-test prompt
 - Known limitations: see [docs/known-limitations.md](docs/known-limitations.md).
 - End-to-end verification: [docs/self-test-prompt.md](docs/self-test-prompt.md).
 
+## Testing
+
+`npm test` runs one runtime verification: a scripted mock LLM (no API key, no
+network) drives a real headless dsh agent loop with both plugins mounted and
+asserts the tool loop completes end to end. Requires Node >= 22 and the `dsh`
+launcher on PATH (or the `DSH` env var); the test skips when dsh is missing.
+
 License: MIT

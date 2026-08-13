@@ -1,0 +1,14 @@
+# ── dsh-native-web: direct-HTTP web search & scrape (no MCP) ─────────────
+#
+# One composition row — a pure mount point. Install the package once:
+#
+#   npm pack ./packages/dsh-native-web && npm install -g ./vcxmug-dsh-native-web-0.1.0.tgz
+#
+# Then add this row to any agent preset's `agent.cordis.yml` (or create/edit
+# the preset in the Web UI: Settings → Agent presets). All configuration is
+# done in the Web settings form: Settings → Plugins → dsh-native-web
+# (baseUrl, probeUrls, apiKey, apiVersion, timeouts ...). Changes apply on
+# the next tool call — no session restart.
+
+- id: native-web
+  name: '@vcxmug/dsh-native-web'

@@ -1,0 +1,34 @@
+{
+  "name": "@vcxmug/dsh-native-web",
+  "description": "Native (no-MCP, no-cloud) web search and page scrape tools for DeepSeek Harness agents — direct HTTP to your local Firecrawl-compatible instance. Fills the gap of cloud-search token cost and MCP bridge overhead.",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib"
+  ],
+  "keywords": [
+    "deepseek-harness",
+    "dsh-plugin",
+    "web-search",
+    "scrape",
+    "self-hosted",
+    "firecrawl-compatible"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1"
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh-tools": "^0.1.0-rc.6",
+    "@deepseek-ai/schemastery": "^3.18.1"
+  }
+}

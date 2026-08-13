@@ -29,7 +29,7 @@ import { isAbsolute, join } from 'node:path'
 export const name = 'vision'
 
 /** Settings service is a hard dependency: it owns the configuration form. */
-export const inject = ['settings']
+export const inject = ['settings', 'tools']
 
 /** Row config schema. Doubles as the Web settings form schema. */
 export const Config = z.object({
@@ -225,7 +225,6 @@ export function apply(ctx, config) {
           model: { type: 'string' },
           status: { type: 'string' },
         },
-        required: ['answer', 'model', 'status'],
         additionalProperties: false,
       },
       render(args, value) {
@@ -257,7 +256,6 @@ export function apply(ctx, config) {
           models: { type: 'array', items: { type: 'string' } },
           provider: { type: 'string' },
         },
-        required: ['models', 'provider'],
         additionalProperties: false,
       },
       render(args, value) {

@@ -29,7 +29,7 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 export const name = 'native-web'
 
 /** Settings service is a hard dependency: it owns the configuration form. */
-export const inject = ['settings']
+export const inject = ['settings', 'tools']
 
 /** Row config schema. Machine-specific values (url/key) belong here. */
 export const Config = z.object({
@@ -163,7 +163,6 @@ export function apply(ctx, config) {
           },
           id: { type: 'string' },
         },
-        required: ['results'],
         additionalProperties: false,
       },
       render(args, value) {
@@ -219,7 +218,6 @@ export function apply(ctx, config) {
           url: { type: 'string' },
           format: { type: 'string' },
         },
-        required: ['content', 'url', 'format'],
         additionalProperties: false,
       },
       render(args, value) {

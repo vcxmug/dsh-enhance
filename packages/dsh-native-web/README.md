@@ -23,12 +23,17 @@ MCP bridges add protocol hops and session turns. This package instead talks
 
 ```bash
 npm pack ./packages/dsh-native-web
-npm install -g ./vcxmug-dsh-native-web-0.1.0.tgz
+dsh plugin --profile web add ./vcxmug-dsh-native-web-0.1.0.tgz
 ```
 
-Add a pure mount-point row to your agent preset
-(`$DSH_HOME/.agent-presets/<id>/agent.cordis.yml`, or edit the preset in the
-Web UI: Settings → Agent presets):
+(`dsh plugin` installs into the profile directory — where the Harness loader
+resolves plugin packages from. Keep the tarball somewhere durable: the
+profile records a `file:` dependency on it.)
+
+Add a pure mount-point row — either to a profile's `cordis.patch.yml` as an
+`insert` patch (every session of that profile) or to an agent preset
+(scoped; `$DSH_HOME/.agent-presets/<id>/agent.cordis.yml`, or the Web UI:
+Settings → Agent presets):
 
 ```yaml
 - id: native-web

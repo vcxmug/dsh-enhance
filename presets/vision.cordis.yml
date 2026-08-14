@@ -2,13 +2,14 @@
 #
 # One composition row — a pure mount point. Install the package once:
 #
-#   npm pack ./packages/dsh-vision && npm install -g ./vcxmug-dsh-vision-0.1.0.tgz
+#   npm pack ./packages/dsh-vision && dsh plugin --profile web add ./vcxmug-dsh-vision-0.1.0.tgz
 #
-# Then add this row to any agent preset's `agent.cordis.yml` (or create/edit
-# the preset in the Web UI: Settings → Agent presets). All configuration is
-# done in the Web settings form: Settings → Plugins → dsh-vision
-# (baseUrl, model, apiKey, apiKeyFile, detail, ...). Changes apply on the
-# next tool call — no session restart.
+# Then mount this row in one of two places: a profile's `cordis.patch.yml`
+# (as an `insert` patch — every session of that profile), or any agent
+# preset's `agent.cordis.yml` (Web UI: Settings → Agent presets). All
+# configuration is done in the Web settings form: Settings → Plugins →
+# dsh-vision (baseUrl, model, apiKey, apiKeyFile, detail, ...). Changes
+# apply on the next tool call — no session restart.
 
 - id: vision
   name: '@vcxmug/dsh-vision'

@@ -1,9 +1,9 @@
 # Self-test prompt
 
-Send this as the first message of a session on a preset with the toolkit rows
-(`vision`, `native-web`) to verify the integration end to end. It exercises
-search, scrape and vision, and asks for an explicit report instead of
-silently skipping anything.
+Send this as the first message of a session on a preset (or profile) with the
+toolkit rows (`vision`, `native-web`) to verify the integration end to end. It
+exercises search, scrape and vision, and asks for an explicit report instead
+of silently skipping anything.
 
 ```markdown
 请对 dsh-enhance 工具集做一次完整自检并报告结果：

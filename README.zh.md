@@ -18,35 +18,58 @@
 
 ## 安装
 
-一次性、每台机器（包从本仓库**本地安装**，无需 npm 账号）：
+一次性、每台机器（包从本仓库**本地安装**，无需 npm 账号）。Harness 加载器从
+profile 目录解析插件包名，因此要装进 profile 而不是全局：
 
 ```bash
 npm pack ./packages/dsh-vision ./packages/dsh-native-web
-npm install -g ./vcxmug-dsh-vision-0.1.0.tgz ./vcxmug-dsh-native-web-0.1.0.tgz
+dsh plugin --profile web add ./vcxmug-dsh-vision-0.1.0.tgz ./vcxmug-dsh-native-web-0.1.0.tgz
 ```
 
-（`npm install -g ./packages/...` 会创建符号链接导致依赖无法解析；先 pack
-再安装才是带依赖的真实副本。）
+`dsh plugin` 转发给 profile 目录里的 pnpm，并记录指向 tarball 的 `file:`
+依赖——请把 tarball 放在不会丢的位置，重启后重装才能继续解析。
+（`npm install -g` 不够：profile 加载器看不见全局前缀；直接
+`npm install -g ./packages/...` 还会创建依赖无法解析的符号链接。）
 
 插件用 TypeScript 编写（`src/index.ts`，strict 模式）；构建产物 `lib/` 已提交，
 因此打包安装无需构建步骤。修改源码后，在包目录内执行
 `npm install && npm run build` 重新构建。
 
-然后在 DeepSeek Harness Web 界面：
+## 挂载组合行
 
-1. **设置 → Agent 预设**——新建一个预设（或复制现有预设），加入你要的行
-   （复制 `presets/vision.cordis.yml` 与 `presets/native-web.cordis.yml`，
-   或直接写这两行）：
-   ```yaml
-   - id: vision
-     name: '@vcxmug/dsh-vision'
-   - id: native-web
-     name: '@vcxmug/dsh-native-web'
-   ```
-2. **设置 → 插件 → dsh-vision / dsh-native-web**——在表单里配置：
-   端点地址、模型、API Key、实例地址/Key、超时等。
-3. 用该预设**开一个新会话**。之后在设置里改配置，下一次工具调用即生效，
-   无需重启。
+两种受支持的挂载位置，二选一（行是纯挂载点，可直接复制
+`presets/vision.cordis.yml` 与 `presets/native-web.cordis.yml`）：
+
+**A. Profile 补丁层——该 profile 的所有会话从一开始就生效。**
+向 profile 的 `cordis.patch.yml` 追加 insert 补丁：
+
+```yaml
+- insert:
+    - id: vision
+      name: '@vcxmug/dsh-vision'
+    - id: native-web
+      name: '@vcxmug/dsh-native-web'
+```
+
+补丁层会被运行中的 `dsh` 热加载，重启后依然生效，无需选预设、无需重开会话。
+
+**B. 单个 Agent 预设——只对选该预设的会话生效。** 在 Web 界面：
+设置 → Agent 预设——新建一个预设（或复制现有预设），加入这两行：
+
+```yaml
+- id: vision
+  name: '@vcxmug/dsh-vision'
+- id: native-web
+  name: '@vcxmug/dsh-native-web'
+```
+
+两点注意：两种位置的行 `config:` 都是设置表单的 base 层；另外不要复制一个
+会注册官方 inspect 提供者的预设（`cordis` 创造模式就是），并同时在同一进程里
+保留原预设的会话——两次挂载会注册同一批进程级提供者，第二次挂载会被拒绝。
+
+然后在 Web 界面：**设置 → 插件 → dsh-vision / dsh-native-web**——在表单里配置：
+端点地址、模型、API Key、实例地址/Key、超时等。改动下一次工具调用即生效，
+无需重启。
 
 ## 依赖
 
@@ -63,9 +86,8 @@ npm install -g ./vcxmug-dsh-vision-0.1.0.tgz ./vcxmug-dsh-native-web-0.1.0.tgz
 ```
 packages/dsh-vision/        # 识图插件（TS 源码在 src/，构建产物 lib/ 已入库）
 packages/dsh-native-web/    # 原生联网插件（TS 源码在 src/，构建产物 lib/ 已入库）
-src/dsh-http/               # 动态插件形态使用的 Go 辅助二进制（仅标准库）
 presets/                    # 纯挂载点组合行片段
-docs/                       # 已知限制、辅助二进制、自测提示词
+docs/                       # 已知限制、自测提示词
 ```
 
 ## 说明
@@ -73,10 +95,6 @@ docs/                       # 已知限制、辅助二进制、自测提示词
 - 原生联网 vs MCP：MCP 每次调用要经过 DSH 的 MCP client 和一个
   `firecrawl-mcp` 子进程——多跳、多会话轮次。原生路线是**一次直接 HTTP
   调用**你的实例。（更偏好 MCP？官方的 `@deepseek-ai/dsh-mcp-client` 可走该路线。）
-- 动态插件形态（会话级、无需预设）：插件通过 shell 服务调用 `dsh-http`
-  Go 辅助二进制——**仅 Go 标准库、零第三方依赖**——所有变量经环境变量与
-  stdin 传递，API key 不会出现在任何进程命令行里。契约与构建见
-  [docs/helper-binary.md](docs/helper-binary.md)。
 - 已知限制：见 [docs/known-limitations.md](docs/known-limitations.md)。
 - 端到端验证：见 [docs/self-test-prompt.md](docs/self-test-prompt.md)。
 

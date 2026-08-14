@@ -21,36 +21,64 @@ the wire.
 ## Install
 
 One-time, per machine (the packages are installed locally from this repo — no
-npm registry account needed):
+npm registry account needed). The Harness loader resolves plugin packages from
+the profile directory, so install them into the profile rather than globally:
 
 ```bash
 npm pack ./packages/dsh-vision ./packages/dsh-native-web
-npm install -g ./vcxmug-dsh-vision-0.1.0.tgz ./vcxmug-dsh-native-web-0.1.0.tgz
+dsh plugin --profile web add ./vcxmug-dsh-vision-0.1.0.tgz ./vcxmug-dsh-native-web-0.1.0.tgz
 ```
 
-(`npm install -g ./packages/...` would create symlinks whose dependencies do
-not resolve; packing first installs real copies with their dependencies.)
+`dsh plugin` forwards to pnpm inside the profile directory and records `file:`
+dependencies pointing at the tarballs — keep the tarballs somewhere durable so
+a reinstall after reboot keeps resolving. (`npm install -g` is not enough: the
+profile loader cannot see the global prefix, and installing the package
+directories creates symlinks whose dependencies do not resolve.)
 
 The plugins are written in TypeScript (`src/index.ts`, strict mode); the built
 `lib/` is committed, so packing and installing work with no build step. After
 editing the source, rebuild with `npm install && npm run build` inside the
 package directory.
 
-Then, in the DeepSeek Harness Web UI:
+## Mount the rows
 
-1. **Settings → Agent presets** — create a preset (or duplicate an existing
-   one) and add the rows you want (copy from `presets/vision.cordis.yml` and
-   `presets/native-web.cordis.yml`, or just the two lines):
-   ```yaml
-   - id: vision
-     name: '@vcxmug/dsh-vision'
-   - id: native-web
-     name: '@vcxmug/dsh-native-web'
-   ```
-2. **Settings → Plugins → dsh-vision / dsh-native-web** — configure the form:
-   endpoint base URL, model, API key, instance URL/key, timeouts, …
-3. Start a **new session** with that preset. Changes made later in Settings
-   apply on the next tool call — no restart.
+Two supported placements — pick one (the rows are pure mount points; copy
+from `presets/vision.cordis.yml` and `presets/native-web.cordis.yml`):
+
+**A. Profile patch layer — every session of that profile, from the start.**
+Append an insert patch to the profile's `cordis.patch.yml`:
+
+```yaml
+- insert:
+    - id: vision
+      name: '@vcxmug/dsh-vision'
+    - id: native-web
+      name: '@vcxmug/dsh-native-web'
+```
+
+The patch layer is hot-reloaded by a running `dsh`, survives reboots, and
+needs no preset picking or session restarts.
+
+**B. One agent preset — scoped to sessions on that preset.** In the Web UI:
+Settings → Agent presets — create a preset (or duplicate an existing one) and
+add the rows:
+
+```yaml
+- id: vision
+  name: '@vcxmug/dsh-vision'
+- id: native-web
+  name: '@vcxmug/dsh-native-web'
+```
+
+Two cautions: `config:` keys in either placement act as the settings form's
+base layer; and do not duplicate a preset that registers first-party inspect
+providers (the `cordis` creative preset does) while sessions on the original
+run in the same process — both mounts register the same process-global
+providers and the second mount is rejected.
+
+Then, in the Web UI: **Settings → Plugins → dsh-vision / dsh-native-web** —
+configure the form: endpoint base URL, model, API key, instance URL/key,
+timeouts, … Changes apply on the next tool call — no restart.
 
 ## Requirements
 
@@ -68,9 +96,8 @@ Then, in the DeepSeek Harness Web UI:
 ```
 packages/dsh-vision/        # vision plugin (TS in src/, built lib/ committed)
 packages/dsh-native-web/    # native web plugin (TS in src/, built lib/ committed)
-src/dsh-http/               # Go helper binary for the dynamic-plugin form (stdlib only)
 presets/                    # pure mount-point composition fragments
-docs/                       # known limitations, helper binary, self-test prompt
+docs/                       # known limitations and self-test prompt
 ```
 
 ## Notes
@@ -79,11 +106,6 @@ docs/                       # known limitations, helper binary, self-test prompt
   `firecrawl-mcp` subprocess — extra hops and session turns. The native route
   is one direct HTTP call to your instance. (Prefer MCP? The upstream
   `@deepseek-ai/dsh-mcp-client` works for that.)
-- Dynamic-plugin form (session-scoped, no agent preset): the plugin calls the
-  `dsh-http` Go helper — **Go standard library only, zero third-party
-  dependencies** — through the shell service with every variable passed via
-  environment/stdin, so the API key never appears in a process argv. See
-  [docs/helper-binary.md](docs/helper-binary.md) for the contract and build.
 - Known limitations: see [docs/known-limitations.md](docs/known-limitations.md).
 - End-to-end verification: [docs/self-test-prompt.md](docs/self-test-prompt.md).
 

@@ -2,7 +2,7 @@
 #
 # One composition row — a pure mount point. Install the package once:
 #
-#   npm pack ./packages/dsh-native-web && dsh plugin --profile web add ./vcxmug-dsh-native-web-0.1.0.tgz
+#   npm pack ./packages/dsh-native-web && dsh plugin --profile web add ./vcxmug-dsh-native-web-0.1.1.tgz
 #
 # Then mount this row in one of two places: a profile's `cordis.patch.yml`
 # (as an `insert` patch — every session of that profile), or any agent

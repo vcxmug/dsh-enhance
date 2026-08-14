@@ -56,3 +56,22 @@ call fail with a misleading `model_not_found` / "unknown provider for model"
 error, even though the model is listed by `/models` and the same call
 without `instructions` succeeds. The plugins therefore send **no
 `instructions` field** and put all guidance in the question text.
+
+## 8. Install-level troubleshooting
+
+These are about the harness integration itself, not the instances:
+
+- **"not configured" errors on every call** — expected before the Web
+  settings form is filled in (Settings → Plugins → dsh-vision /
+  dsh-native-web). No restart needed; changes apply on the next tool call.
+- **`Cannot read properties of undefined (reading 'prepare')` on every tool
+  call after a cold boot** — the installed plugin tarballs are older than
+  0.1.1 and drag a second copy of `@deepseek-ai/dsh-tools` into the profile,
+  shadowing the harness's own copy (module-scoped Symbol mismatch). Rebuild
+  from a current checkout and re-run `./install.sh`; the regression suite
+  (`npm test`) pins this invariant.
+- **Tools missing from a session** — the profile patch layer hot-reloads in a
+  running `dsh web`; if the rows were added while it was stopped, starting
+  `dsh web` mounts them (a profile boot fails loudly if the rows cannot
+  load). `native_search`/`native_scrape`/`vision_*` should appear in the
+  tool list of every session of that profile.
